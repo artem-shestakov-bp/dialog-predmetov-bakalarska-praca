@@ -121,7 +121,7 @@ const offlineModeBtn = $("offlineMode");
 const onlineStatus = $("onlineStatus");
 
 let participants = [];
-let currentIndex = 0;
+let currentSpeakerId = null;
 let entries = [];
 
 let roomId = "";
@@ -145,37 +145,30 @@ function syncAssignment() {
 }
 
 function updateWho() {
-  if (!participants.length) {
+  const speaker = participants.find(
+    p => p.id === currentSpeakerId
+  );
+
+  if (!speaker) {
     whoNow.textContent = "—";
     return;
   }
 
-  if (currentIndex >= participants.length) {
-    currentIndex = 0;
-  }
-
-  const speaker = participants[currentIndex];
-
-  if (
-    online &&
-    speaker &&
-    speaker.ownerId &&
-    speaker.ownerId !== clientId
-  ) {
-    whoNow.textContent = speaker.name + " (cudzí)";
-  } else {
-    whoNow.textContent = speaker.name;
-  }
+  whoNow.textContent = speaker.name;
 }
 
 function renderParticipants() {
   participantsWrap.innerHTML = "";
 
-  participants.forEach((p, index) => {
+  participants.forEach((p) => {
     const btn = document.createElement("button");
 
-    btn.className = "chip" + (index === currentIndex ? " active" : "");
+    btn.className =
+      "chip" +
+      (p.id === currentSpeakerId ? " active" : "");
+
     btn.textContent = p.name;
+
     btn.style.background = p.color;
 
     if (
@@ -184,20 +177,21 @@ function renderParticipants() {
       p.ownerId !== clientId
     ) {
       btn.style.opacity = ".45";
-      btn.title = "Cudzí účastník - nemôžeš za neho písať";
+      btn.title = "Cudzí účastník";
     }
 
     btn.onclick = () => {
+
       if (
         online &&
         p.ownerId &&
         p.ownerId !== clientId
       ) {
-        alert("Nemôžeš vybrať cudzieho účastníka.");
+        alert("Nemôžeš písať za cudzieho účastníka.");
         return;
       }
 
-      currentIndex = index;
+      currentSpeakerId = p.id;
 
       renderParticipants();
 
@@ -208,6 +202,7 @@ function renderParticipants() {
   });
 
   syncAssignment();
+
   updateWho();
 }
 
@@ -215,25 +210,37 @@ function renderLog() {
   log.innerHTML = "";
 
   entries.forEach((e, i) => {
+
     const row = document.createElement("div");
+
     row.className = "line";
 
     const badge = document.createElement("div");
+
     badge.className = "badge";
+
     badge.textContent = e.speakerName || "?";
-    badge.style.background = e.speakerColor || "#4ea1ff";
+
+    badge.style.background =
+      e.speakerColor || "#4ea1ff";
 
     const content = document.createElement("div");
+
     content.className = "content";
+
     content.textContent = e.text || "";
 
     row.appendChild(badge);
+
     row.appendChild(content);
+
     log.appendChild(row);
 
     if (i < entries.length - 1) {
       const hr = document.createElement("div");
+
       hr.className = "hr";
+
       log.appendChild(hr);
     }
   });
@@ -252,60 +259,90 @@ function createParticipant(name) {
 }
 
 async function addParticipant(name = null) {
+
   const finalName =
     name ||
     objInput.value.trim() ||
-    choice(OBJEKTY, participants.map(p => p.name));
+    choice(
+      OBJEKTY,
+      participants.map(p => p.name)
+    );
 
   if (!finalName) return;
 
-  const participant = createParticipant(finalName);
+  const participant =
+    createParticipant(finalName);
 
   objInput.value = "";
 
+  if (!currentSpeakerId) {
+    currentSpeakerId = participant.id;
+  }
+
   if (online && roomId) {
+
     await setDoc(
-      doc(db, "rooms", roomId, "participants", participant.id),
+      doc(
+        db,
+        "rooms",
+        roomId,
+        "participants",
+        participant.id
+      ),
       {
         ...participant,
         createdAt: serverTimestamp()
       }
     );
+
   } else {
+
     participants.push(participant);
+
     renderParticipants();
   }
 }
 
-function findNextOwnParticipantIndex(startIndex) {
-  if (!participants.length) return 0;
+function nextSpeaker() {
 
-  for (let step = 1; step <= participants.length; step++) {
-    const index = (startIndex + step) % participants.length;
-    const p = participants[index];
+  const ownParticipants =
+    participants.filter(
+      p =>
+        !online ||
+        !p.ownerId ||
+        p.ownerId === clientId
+    );
 
-    if (
-      !online ||
-      !p.ownerId ||
-      p.ownerId === clientId
-    ) {
-      return index;
-    }
+  if (!ownParticipants.length) {
+
+    currentSpeakerId = null;
+
+    updateWho();
+
+    return;
   }
 
-  return startIndex;
-}
+  const currentOwnIndex =
+    ownParticipants.findIndex(
+      p => p.id === currentSpeakerId
+    );
 
-function nextSpeaker() {
-  if (!participants.length) return;
+  const nextIndex =
+    currentOwnIndex === -1
+      ? 0
+      : (currentOwnIndex + 1) %
+        ownParticipants.length;
 
-  currentIndex = findNextOwnParticipantIndex(currentIndex);
+  currentSpeakerId =
+    ownParticipants[nextIndex].id;
 
   renderParticipants();
+
   updateWho();
 }
 
 async function pushLine() {
+
   const txt = line.value.trim();
 
   if (!txt) return;
@@ -315,7 +352,15 @@ async function pushLine() {
     return;
   }
 
-  const speaker = participants[currentIndex];
+  const speaker =
+    participants.find(
+      p => p.id === currentSpeakerId
+    );
+
+  if (!speaker) {
+    alert("Vyber účastníka.");
+    return;
+  }
 
   if (
     online &&
@@ -338,308 +383,555 @@ async function pushLine() {
   line.value = "";
 
   if (online && roomId) {
+
     try {
+
       await addDoc(
-        collection(db, "rooms", roomId, "messages"),
+        collection(
+          db,
+          "rooms",
+          roomId,
+          "messages"
+        ),
         {
           ...message,
           createdAt: serverTimestamp()
         }
       );
+
     } catch (error) {
-      console.error("Firebase write error:", error);
-      alert("Chyba Firebase. Správa bola uložená iba lokálne.");
+
+      console.error(
+        "Firebase write error:",
+        error
+      );
+
+      alert(
+        "Chyba Firebase. Správa bola uložená iba lokálne."
+      );
+
       entries.push(message);
+
       renderLog();
     }
+
   } else {
+
     entries.push(message);
+
     renderLog();
   }
 
   nextSpeaker();
+
   line.focus();
 }
 
 function connectRoom() {
-  const value = roomInput.value.trim();
+
+  const value =
+    roomInput.value.trim();
 
   if (!value) {
+
     alert("Zadaj Room ID.");
+
     return;
   }
 
   roomId = value;
+
   online = true;
 
-  if (unsubscribeMessages) unsubscribeMessages();
-  if (unsubscribeParticipants) unsubscribeParticipants();
-  if (unsubscribeRoomMeta) unsubscribeRoomMeta();
+  if (unsubscribeMessages)
+    unsubscribeMessages();
+
+  if (unsubscribeParticipants)
+    unsubscribeParticipants();
+
+  if (unsubscribeRoomMeta)
+    unsubscribeRoomMeta();
 
   entries = [];
   participants = [];
-  currentIndex = 0;
+
+  currentSpeakerId = null;
 
   renderLog();
+
   renderParticipants();
 
-  onlineStatus.textContent = "Pripájam sa do miestnosti: " + roomId;
+  onlineStatus.textContent =
+    "Pripájam sa do miestnosti: " +
+    roomId;
 
   const messagesQuery = query(
-    collection(db, "rooms", roomId, "messages"),
+    collection(
+      db,
+      "rooms",
+      roomId,
+      "messages"
+    ),
     orderBy("createdAt")
   );
 
   unsubscribeMessages = onSnapshot(
     messagesQuery,
+
     (snapshot) => {
+
       entries = [];
 
       snapshot.forEach((docItem) => {
-        const data = docItem.data();
+
+        const data =
+          docItem.data();
 
         entries.push({
-          speakerId: data.speakerId,
-          speakerOwnerId: data.speakerOwnerId,
-          speakerName: data.speakerName,
-          speakerColor: data.speakerColor,
+          speakerId:
+            data.speakerId,
+
+          speakerOwnerId:
+            data.speakerOwnerId,
+
+          speakerName:
+            data.speakerName,
+
+          speakerColor:
+            data.speakerColor,
+
           text: data.text,
-          localCreatedAt: data.localCreatedAt,
-          createdAt: data.createdAt
+
+          localCreatedAt:
+            data.localCreatedAt,
+
+          createdAt:
+            data.createdAt
         });
       });
 
       renderLog();
-      onlineStatus.textContent = "Online miestnosť: " + roomId;
+
+      onlineStatus.textContent =
+        "Online miestnosť: " +
+        roomId;
     },
+
     (error) => {
-      console.error("Firebase messages listen error:", error);
-      onlineStatus.textContent = "Chyba Firebase messages";
-      alert("Firebase messages realtime zlyhalo. Skontroluj Rules.");
+
+      console.error(
+        "Firebase messages listen error:",
+        error
+      );
+
+      onlineStatus.textContent =
+        "Chyba Firebase messages";
+
+      alert(
+        "Firebase messages realtime zlyhalo."
+      );
     }
   );
 
   const participantsQuery = query(
-    collection(db, "rooms", roomId, "participants"),
+    collection(
+      db,
+      "rooms",
+      roomId,
+      "participants"
+    ),
     orderBy("createdAt")
   );
 
-  unsubscribeParticipants = onSnapshot(
-    participantsQuery,
-    (snapshot) => {
-      participants = [];
+  unsubscribeParticipants =
+    onSnapshot(
+      participantsQuery,
 
-      snapshot.forEach((docItem) => {
-        const data = docItem.data();
+      (snapshot) => {
 
-        participants.push({
-          id: data.id || docItem.id,
-          ownerId: data.ownerId || "",
-          name: data.name,
-          color: data.color,
-          localCreatedAt: data.localCreatedAt,
-          createdAt: data.createdAt
+        participants = [];
+
+        snapshot.forEach((docItem) => {
+
+          const data =
+            docItem.data();
+
+          participants.push({
+            id:
+              data.id ||
+              docItem.id,
+
+            ownerId:
+              data.ownerId || "",
+
+            name: data.name,
+
+            color: data.color,
+
+            localCreatedAt:
+              data.localCreatedAt,
+
+            createdAt:
+              data.createdAt
+          });
         });
-      });
 
-      if (participants.length) {
-        const current = participants[currentIndex];
+        if (!currentSpeakerId) {
 
-        if (
-          !current ||
-          (
-            online &&
-            current.ownerId &&
-            current.ownerId !== clientId
-          )
-        ) {
-          const ownIndex = participants.findIndex(
-            p => !p.ownerId || p.ownerId === clientId
-          );
+          const ownParticipant =
+            participants.find(
+              p =>
+                !p.ownerId ||
+                p.ownerId === clientId
+            );
 
-          currentIndex = ownIndex >= 0 ? ownIndex : 0;
+          if (ownParticipant) {
+            currentSpeakerId =
+              ownParticipant.id;
+          }
         }
-      } else {
-        currentIndex = 0;
+
+        renderParticipants();
+      },
+
+      (error) => {
+
+        console.error(
+          "Firebase participants listen error:",
+          error
+        );
+
+        onlineStatus.textContent =
+          "Chyba Firebase participants";
+
+        alert(
+          "Firebase participants realtime zlyhalo."
+        );
       }
+    );
 
-      renderParticipants();
-    },
-    (error) => {
-      console.error("Firebase participants listen error:", error);
-      onlineStatus.textContent = "Chyba Firebase participants";
-      alert("Firebase participants realtime zlyhalo. Skontroluj Rules.");
-    }
-  );
+  const roomRef =
+    doc(db, "rooms", roomId);
 
-  const roomRef = doc(db, "rooms", roomId);
+  unsubscribeRoomMeta =
+    onSnapshot(roomRef, (snapshot) => {
 
-  unsubscribeRoomMeta = onSnapshot(roomRef, (snapshot) => {
-    if (!snapshot.exists()) return;
+      if (!snapshot.exists()) return;
 
-    const data = snapshot.data();
+      const data =
+        snapshot.data();
 
-    if (data.tema && tema.value !== data.tema) {
-      tema.value = data.tema;
-      syncAssignment();
-    }
-  });
+      if (
+        data.tema &&
+        tema.value !== data.tema
+      ) {
+        tema.value = data.tema;
+
+        syncAssignment();
+      }
+    });
 }
 
 function goOffline() {
-  if (unsubscribeMessages) unsubscribeMessages();
-  if (unsubscribeParticipants) unsubscribeParticipants();
-  if (unsubscribeRoomMeta) unsubscribeRoomMeta();
+
+  if (unsubscribeMessages)
+    unsubscribeMessages();
+
+  if (unsubscribeParticipants)
+    unsubscribeParticipants();
+
+  if (unsubscribeRoomMeta)
+    unsubscribeRoomMeta();
 
   unsubscribeMessages = null;
   unsubscribeParticipants = null;
   unsubscribeRoomMeta = null;
 
   online = false;
+
   roomId = "";
 
   roomInput.value = "";
-  onlineStatus.textContent = "Offline režim";
+
+  onlineStatus.textContent =
+    "Offline režim";
 
   entries = [];
   participants = [];
-  currentIndex = 0;
 
-  addParticipant(choice(OBJEKTY));
-  addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
+  currentSpeakerId = null;
+
+  addParticipant(
+    choice(OBJEKTY)
+  );
+
+  addParticipant(
+    choice(
+      OBJEKTY,
+      participants.map(
+        p => p.name
+      )
+    )
+  );
 
   renderLog();
+
   renderParticipants();
+
   syncAssignment();
 
   line.focus();
 }
 
 async function saveTemaOnline() {
-  if (!online || !roomId) return;
+
+  if (!online || !roomId)
+    return;
 
   await setDoc(
     doc(db, "rooms", roomId),
     {
-      tema: tema.value || "",
-      updatedAt: serverTimestamp()
+      tema:
+        tema.value || "",
+
+      updatedAt:
+        serverTimestamp()
     },
     { merge: true }
   );
 }
 
 async function clearDialog() {
-  if (!confirm("Vyčistiť celý dialóg?")) return;
+
+  if (
+    !confirm(
+      "Vyčistiť celý dialóg?"
+    )
+  ) return;
 
   entries = [];
+
   renderLog();
 
   if (online && roomId) {
+
     try {
-      const snap = await getDocs(
-        collection(db, "rooms", roomId, "messages")
-      );
+
+      const snap =
+        await getDocs(
+          collection(
+            db,
+            "rooms",
+            roomId,
+            "messages"
+          )
+        );
 
       const deletes = [];
 
       snap.forEach((docItem) => {
-        deletes.push(deleteDoc(docItem.ref));
+
+        deletes.push(
+          deleteDoc(
+            docItem.ref
+          )
+        );
       });
 
-      await Promise.all(deletes);
+      await Promise.all(
+        deletes
+      );
+
     } catch (error) {
-      console.error("Firebase delete error:", error);
-      alert("Nepodarilo sa vyčistiť online miestnosť.");
+
+      console.error(
+        "Firebase delete error:",
+        error
+      );
+
+      alert(
+        "Nepodarilo sa vyčistiť online miestnosť."
+      );
     }
   }
 }
 
 function downloadTxt() {
-  const temaText = tema.value || "bez_temy";
+
+  const temaText =
+    tema.value ||
+    "bez_temy";
 
   const header =
     `Dialóg predmetov\n` +
-    `Téma: ${tema.value || "—"}\n` +
-    `Účastníci: ${participants.map(p => p.name).join(", ") || "—"}\n\n`;
+    `Téma: ${
+      tema.value || "—"
+    }\n` +
+    `Účastníci: ${
+      participants
+        .map(
+          p => p.name
+        )
+        .join(", ") || "—"
+    }\n\n`;
 
   const body = entries
-    .map(e => `${e.speakerName}: ${e.text}`)
+    .map(
+      e =>
+        `${e.speakerName}: ${e.text}`
+    )
     .join("\n");
 
-  const blob = new Blob([header + body + "\n"], {
-    type: "text/plain;charset=utf-8"
-  });
+  const blob = new Blob(
+    [header + body + "\n"],
+    {
+      type:
+        "text/plain;charset=utf-8"
+    }
+  );
 
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  const a =
+    document.createElement("a");
 
-  const safe = temaText
-    .toLowerCase()
-    .replace(/[^a-z0-9áäčďéíĺľňóôŕšťúýž_-]+/gi, "-");
+  a.href =
+    URL.createObjectURL(blob);
 
-  a.download = `dialog-predmetov_${safe || "zaznam"}.txt`;
+  const safe =
+    temaText
+      .toLowerCase()
+      .replace(
+        /[^a-z0-9áäčďéíĺľňóôŕšťúýž_-]+/gi,
+        "-"
+      );
+
+  a.download =
+    `dialog-predmetov_${safe || "zaznam"}.txt`;
 
   document.body.appendChild(a);
+
   a.click();
 
   setTimeout(() => {
-    URL.revokeObjectURL(a.href);
+
+    URL.revokeObjectURL(
+      a.href
+    );
+
     a.remove();
+
   }, 0);
 }
 
-temaRnd.onclick = async () => {
-  tema.value = choice(TEMY);
-  syncAssignment();
-  await saveTemaOnline();
-};
+temaRnd.onclick =
+  async () => {
 
-tema.addEventListener("input", async () => {
-  syncAssignment();
-  await saveTemaOnline();
-});
+    tema.value =
+      choice(TEMY);
 
-participantRnd.onclick = () => {
-  objInput.value = choice(
-    OBJEKTY,
-    participants.map(p => p.name)
-  );
-};
+    syncAssignment();
 
-addParticipantBtn.onclick = () => {
-  addParticipant();
-};
+    await saveTemaOnline();
+  };
 
-objInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
+tema.addEventListener(
+  "input",
+
+  async () => {
+
+    syncAssignment();
+
+    await saveTemaOnline();
+  }
+);
+
+participantRnd.onclick =
+  () => {
+
+    objInput.value =
+      choice(
+        OBJEKTY,
+        participants.map(
+          p => p.name
+        )
+      );
+  };
+
+addParticipantBtn.onclick =
+  () => {
     addParticipant();
+  };
+
+objInput.addEventListener(
+  "keydown",
+
+  (e) => {
+
+    if (e.key === "Enter") {
+
+      e.preventDefault();
+
+      addParticipant();
+    }
   }
-});
+);
 
-addLine.onclick = pushLine;
+addLine.onclick =
+  pushLine;
 
-line.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    pushLine();
+line.addEventListener(
+  "keydown",
+
+  (e) => {
+
+    if (
+      e.key === "Enter" &&
+      !e.shiftKey
+    ) {
+
+      e.preventDefault();
+
+      pushLine();
+    }
   }
-});
+);
 
-switchBtn.onclick = nextSpeaker;
-clearAll.onclick = clearDialog;
-downloadBtn.onclick = downloadTxt;
-connectRoomBtn.onclick = connectRoom;
-offlineModeBtn.onclick = goOffline;
+switchBtn.onclick =
+  nextSpeaker;
+
+clearAll.onclick =
+  clearDialog;
+
+downloadBtn.onclick =
+  downloadTxt;
+
+connectRoomBtn.onclick =
+  connectRoom;
+
+offlineModeBtn.onclick =
+  goOffline;
 
 function init() {
-  tema.value = choice(TEMY);
 
-  addParticipant(choice(OBJEKTY));
-  addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
+  tema.value =
+    choice(TEMY);
+
+  addParticipant(
+    choice(OBJEKTY)
+  );
+
+  addParticipant(
+    choice(
+      OBJEKTY,
+      participants.map(
+        p => p.name
+      )
+    )
+  );
 
   syncAssignment();
+
   renderLog();
+
   line.focus();
 }
 
