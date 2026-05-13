@@ -25,17 +25,49 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 const TEMY = [
-  "Čo znamená byť užitočný?","Sloboda alebo bezpečnosť?","Treba vždy poslúchať pravidlá?",
-  "Kedy je ticho výrečnejšie než slová?","Čo robí dom domovom?","Ako meriame šťastie?",
-  "Kedy je riziko opodstatnené?","Ako vzniká dôvera?","Potrebujeme rutinu?","Čo skrýva ticho?",
-  "Čo je dôležitejšie: forma alebo obsah?","Kde končí ja a začína my?","Môžeme byť objektívni?",
-  "Ako sa sny menia v čase?","Prečo potrebujeme pravidlá hry?","Kedy je mlčanie lepšie než slová?",
-  "Čo je ideálny deň?","Kde je hranica zodpovednosti?","Ako chápeme krásu?","Kedy riskovať má zmysel?"
+  "Čo znamená byť užitočný?",
+  "Sloboda alebo bezpečnosť?",
+  "Treba vždy poslúchať pravidlá?",
+  "Kedy je ticho výrečnejšie než slová?",
+  "Čo robí dom domovom?",
+  "Ako meriame šťastie?",
+  "Kedy je riziko opodstatnené?",
+  "Ako vzniká dôvera?",
+  "Potrebujeme rutinu?",
+  "Čo skrýva ticho?",
+  "Čo je dôležitejšie: forma alebo obsah?",
+  "Kde končí ja a začína my?",
+  "Môžeme byť objektívni?",
+  "Ako sa sny menia v čase?",
+  "Prečo potrebujeme pravidlá hry?",
+  "Kedy je mlčanie lepšie než slová?",
+  "Čo je ideálny deň?",
+  "Kde je hranica zodpovednosti?",
+  "Ako chápeme krásu?",
+  "Kedy riskovať má zmysel?"
 ];
 
 const OBJEKTY = [
-  "Stolička","Rúra","Dáždnik","Hodiny","Šálka","Kniha","Mobil","Zrkadlo","Kľúč","Lampa",
-  "Bicykel","Vankúš","Ruksak","Ceruzka","Kávovar","Rastlina","Kabát","Fľaša","Vysávač","Toster"
+  "Stolička",
+  "Rúra",
+  "Dáždnik",
+  "Hodiny",
+  "Šálka",
+  "Kniha",
+  "Mobil",
+  "Zrkadlo",
+  "Kľúč",
+  "Lampa",
+  "Bicykel",
+  "Vankúš",
+  "Ruksak",
+  "Ceruzka",
+  "Kávovar",
+  "Rastlina",
+  "Kabát",
+  "Fľaša",
+  "Vysávač",
+  "Toster"
 ];
 
 const COLORS = [
@@ -51,10 +83,10 @@ const COLORS = [
 
 const $ = (id) => document.getElementById(id);
 
-const choice = (arr, exclude = []) => {
+function choice(arr, exclude = []) {
   const pool = arr.filter(x => !exclude.includes(x));
   return pool[Math.floor(Math.random() * pool.length)];
-};
+}
 
 const tema = $("tema");
 const temaOut = $("temaOut");
@@ -99,10 +131,10 @@ function createParticipant(name) {
 }
 
 function addParticipant(name = null) {
-  const finalName = name || objInput.value.trim() || choice(
-    OBJEKTY,
-    participants.map(p => p.name)
-  );
+  const finalName =
+    name ||
+    objInput.value.trim() ||
+    choice(OBJEKTY, participants.map(p => p.name));
 
   if (!finalName) return;
 
@@ -119,6 +151,7 @@ function renderParticipants() {
 
   participants.forEach((p, index) => {
     const btn = document.createElement("button");
+
     btn.className = "chip" + (index === currentIndex ? " active" : "");
     btn.textContent = p.name;
     btn.style.background = p.color;
@@ -144,7 +177,9 @@ function updateWho() {
 
 function nextSpeaker() {
   if (!participants.length) return;
+
   currentIndex = (currentIndex + 1) % participants.length;
+
   renderParticipants();
   updateWho();
 }
@@ -226,7 +261,9 @@ function connectRoom() {
   roomId = value;
   online = true;
 
-  if (unsubscribe) unsubscribe();
+  if (unsubscribe) {
+    unsubscribe();
+  }
 
   const q = query(
     collection(db, "rooms", roomId, "messages"),
@@ -302,7 +339,9 @@ temaRnd.onclick = () => {
 
 tema.addEventListener("input", syncAssignment);
 
-addParticipantBtn.onclick = () => addParticipant();
+addParticipantBtn.onclick = () => {
+  addParticipant();
+};
 
 objInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
@@ -321,8 +360,11 @@ line.addEventListener("keydown", (e) => {
 });
 
 switchBtn.onclick = nextSpeaker;
+
 clearAll.onclick = clearDialog;
+
 downloadBtn.onclick = downloadTxt;
+
 connectRoomBtn.onclick = connectRoom;
 
 function init() {
