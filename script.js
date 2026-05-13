@@ -11,7 +11,8 @@ import {
   onSnapshot,
   serverTimestamp,
   deleteDoc,
-  getDocs
+  getDocs,
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -89,11 +90,7 @@ const $ = (id) => document.getElementById(id);
 
 function choice(arr, exclude = []) {
   const pool = arr.filter(x => !exclude.includes(x));
-
-  if (!pool.length) {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
+  if (!pool.length) return arr[Math.floor(Math.random() * arr.length)];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -126,7 +123,6 @@ let entries = [];
 
 let roomId = "";
 let online = false;
-
 let previousTemaValue = "";
 
 let unsubscribeMessages = null;
@@ -149,15 +145,12 @@ function getOwnParticipants() {
 
 function syncAssignment() {
   temaOut.textContent = tema.value || "—";
-
   participantsOut.textContent =
     participants.map(p => p.name).join(", ") || "—";
 }
 
 function updateWho() {
-  const speaker = participants.find(
-    p => p.id === currentSpeakerId
-  );
+  const speaker = participants.find(p => p.id === currentSpeakerId);
 
   if (!speaker) {
     whoNow.textContent = "—";
@@ -168,13 +161,9 @@ function updateWho() {
 }
 
 function ensureValidCurrentSpeaker() {
-  const selected = participants.find(
-    p => p.id === currentSpeakerId
-  );
+  const selected = participants.find(p => p.id === currentSpeakerId);
 
-  if (selected && isMyParticipant(selected)) {
-    return;
-  }
+  if (selected && isMyParticipant(selected)) return;
 
   const ownParticipant = getOwnParticipants()[0];
 
@@ -187,10 +176,7 @@ function renderParticipants() {
   participants.forEach((p) => {
     const btn = document.createElement("button");
 
-    btn.className =
-      "chip" +
-      (p.id === currentSpeakerId ? " active" : "");
-
+    btn.className = "chip" + (p.id === currentSpeakerId ? " active" : "");
     btn.textContent = p.name;
     btn.style.background = p.color;
 
@@ -206,7 +192,6 @@ function renderParticipants() {
       }
 
       currentSpeakerId = p.id;
-
       renderParticipants();
       updateWho();
     };
@@ -223,34 +208,24 @@ function renderLog() {
 
   entries.forEach((e, i) => {
     const row = document.createElement("div");
-
     row.className = "line";
 
     const badge = document.createElement("div");
-
     badge.className = "badge";
-
     badge.textContent = e.speakerName || "?";
-
-    badge.style.background =
-      e.speakerColor || "#4ea1ff";
+    badge.style.background = e.speakerColor || "#4ea1ff";
 
     const content = document.createElement("div");
-
     content.className = "content";
-
     content.textContent = e.text || "";
 
     row.appendChild(badge);
     row.appendChild(content);
-
     log.appendChild(row);
 
     if (i < entries.length - 1) {
       const hr = document.createElement("div");
-
       hr.className = "hr";
-
       log.appendChild(hr);
     }
   });
@@ -279,7 +254,6 @@ async function addParticipant(name = null) {
   const participant = createParticipant(finalName);
 
   objInput.value = "";
-
   currentSpeakerId = participant.id;
 
   if (online && roomId) {
@@ -358,9 +332,7 @@ async function pushLine() {
 
   ensureValidCurrentSpeaker();
 
-  const speaker = participants.find(
-    p => p.id === currentSpeakerId
-  );
+  const speaker = participants.find(p => p.id === currentSpeakerId);
 
   if (!speaker) {
     alert("Vyber účastníka.");
@@ -394,11 +366,8 @@ async function pushLine() {
       );
     } catch (error) {
       console.error("Firebase write error:", error);
-
       alert("Chyba Firebase.");
-
       entries.push(message);
-
       renderLog();
     }
   } else {
@@ -407,7 +376,6 @@ async function pushLine() {
   }
 
   nextSpeaker();
-
   line.focus();
 }
 
@@ -433,81 +401,74 @@ function connectRoom() {
   renderLog();
   renderParticipants();
 
-  onlineStatus.textContent =
-    "Pripájam sa do miestnosti: " + roomId;
+  onlineStatus.textContent = "Pripájam sa do miestnosti: " + roomId;
 
   const messagesQuery = query(
     collection(db, "rooms", roomId, "messages"),
     orderBy("createdAt")
   );
 
-  unsubscribeMessages = onSnapshot(
-    messagesQuery,
-    (snapshot) => {
-      entries = [];
+  unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+    entries = [];
 
-      snapshot.forEach((docItem) => {
-        const data = docItem.data();
+    snapshot.forEach((docItem) => {
+      const data = docItem.data();
 
-        entries.push({
-          speakerId: data.speakerId,
-          speakerOwnerId: data.speakerOwnerId,
-          speakerName: data.speakerName,
-          speakerColor: data.speakerColor,
-          text: data.text,
-          localCreatedAt: data.localCreatedAt,
-          createdAt: data.createdAt
-        });
+      entries.push({
+        speakerId: data.speakerId,
+        speakerOwnerId: data.speakerOwnerId,
+        speakerName: data.speakerName,
+        speakerColor: data.speakerColor,
+        text: data.text,
+        localCreatedAt: data.localCreatedAt,
+        createdAt: data.createdAt
       });
+    });
 
-      renderLog();
-
-      onlineStatus.textContent =
-        "Online miestnosť: " + roomId;
-    }
-  );
+    renderLog();
+    onlineStatus.textContent = "Online miestnosť: " + roomId;
+  });
 
   const participantsQuery = query(
     collection(db, "rooms", roomId, "participants"),
     orderBy("createdAt")
   );
 
-  unsubscribeParticipants = onSnapshot(
-    participantsQuery,
-    (snapshot) => {
-      participants = [];
+  unsubscribeParticipants = onSnapshot(participantsQuery, (snapshot) => {
+    participants = [];
 
-      snapshot.forEach((docItem) => {
-        const data = docItem.data();
+    snapshot.forEach((docItem) => {
+      const data = docItem.data();
 
-        participants.push({
-          id: data.id || docItem.id,
-          ownerId: data.ownerId || "",
-          name: data.name,
-          color: data.color,
-          localCreatedAt: data.localCreatedAt,
-          createdAt: data.createdAt
-        });
+      participants.push({
+        id: data.id || docItem.id,
+        ownerId: data.ownerId || "",
+        name: data.name,
+        color: data.color,
+        localCreatedAt: data.localCreatedAt,
+        createdAt: data.createdAt
       });
+    });
 
-      ensureValidCurrentSpeaker();
-
-      renderParticipants();
-    }
-  );
+    ensureValidCurrentSpeaker();
+    renderParticipants();
+  });
 
   const roomRef = doc(db, "rooms", roomId);
 
   unsubscribeRoomMeta = onSnapshot(roomRef, (snapshot) => {
-    if (!snapshot.exists()) return;
+    if (!snapshot.exists()) {
+      tema.value = "";
+      previousTemaValue = "";
+      syncAssignment();
+      return;
+    }
 
     const data = snapshot.data();
 
-    if (data.tema && tema.value !== data.tema) {
+    if (typeof data.tema === "string" && tema.value !== data.tema) {
       tema.value = data.tema;
-
       previousTemaValue = data.tema;
-
       syncAssignment();
     }
   });
@@ -526,21 +487,17 @@ function goOffline() {
   roomId = "";
 
   roomInput.value = "";
-
   onlineStatus.textContent = "Offline režim";
 
   entries = [];
   participants = [];
   currentSpeakerId = null;
 
-  addParticipant(choice(OBJEKTY));
+  tema.value = choice(TEMY);
+  previousTemaValue = tema.value;
 
-  addParticipant(
-    choice(
-      OBJEKTY,
-      participants.map(p => p.name)
-    )
-  );
+  addParticipant(choice(OBJEKTY));
+  addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
 
   renderLog();
   renderParticipants();
@@ -562,27 +519,51 @@ async function saveTemaOnline() {
   );
 }
 
+async function clearCollection(pathParts) {
+  const snap = await getDocs(collection(db, ...pathParts));
+  const deletes = [];
+
+  snap.forEach((docItem) => {
+    deletes.push(deleteDoc(docItem.ref));
+  });
+
+  await Promise.all(deletes);
+}
+
 async function clearDialog() {
-  if (!confirm("Vyčistiť celý dialóg?")) return;
+  if (!confirm("Vyčistiť celú miestnosť?")) return;
 
   entries = [];
+  participants = [];
+  currentSpeakerId = null;
+  tema.value = "";
+  previousTemaValue = "";
+  objInput.value = "";
+  line.value = "";
+
   renderLog();
+  renderParticipants();
+  syncAssignment();
 
   if (online && roomId) {
     try {
-      const snap = await getDocs(
-        collection(db, "rooms", roomId, "messages")
+      await clearCollection(["rooms", roomId, "messages"]);
+      await clearCollection(["rooms", roomId, "participants"]);
+
+      await setDoc(
+        doc(db, "rooms", roomId),
+        {
+          tema: "",
+          clearedAt: serverTimestamp()
+        },
+        { merge: true }
       );
 
-      const deletes = [];
-
-      snap.forEach((docItem) => {
-        deletes.push(deleteDoc(docItem.ref));
-      });
-
-      await Promise.all(deletes);
+      onlineStatus.textContent =
+        "Miestnosť vyčistená: " + roomId;
     } catch (error) {
-      console.error("Firebase delete error:", error);
+      console.error("Firebase clear room error:", error);
+      alert("Nepodarilo sa vyčistiť celú miestnosť.");
     }
   }
 }
@@ -601,29 +582,20 @@ function downloadTxt() {
     .map(e => `${e.speakerName}: ${e.text}`)
     .join("\n");
 
-  const blob = new Blob(
-    [header + body + "\n"],
-    {
-      type: "text/plain;charset=utf-8"
-    }
-  );
+  const blob = new Blob([header + body + "\n"], {
+    type: "text/plain;charset=utf-8"
+  });
 
   const a = document.createElement("a");
-
   a.href = URL.createObjectURL(blob);
 
   const safe = temaText
     .toLowerCase()
-    .replace(
-      /[^a-z0-9áäčďéíĺľňóôŕšťúýž_-]+/gi,
-      "-"
-    );
+    .replace(/[^a-z0-9áäčďéíĺľňóôŕšťúýž_-]+/gi, "-");
 
-  a.download =
-    `dialog-predmetov_${safe || "zaznam"}.txt`;
+  a.download = `dialog-predmetov_${safe || "zaznam"}.txt`;
 
   document.body.appendChild(a);
-
   a.click();
 
   setTimeout(() => {
@@ -634,33 +606,33 @@ function downloadTxt() {
 
 temaRnd.onclick = async () => {
   const oldTema = tema.value || "—";
+  const newTema = choice(TEMY, [oldTema]);
 
-  tema.value = choice(TEMY);
+  tema.value = newTema;
 
-  await addSystemMessage(
-    `Téma bola zmenená: "${oldTema}" → "${tema.value}"`
-  );
+  if (oldTema !== newTema) {
+    await addSystemMessage(
+      `Téma bola zmenená: "${oldTema}" → "${newTema}"`
+    );
+  }
 
-  previousTemaValue = tema.value;
-
+  previousTemaValue = newTema;
   syncAssignment();
-
   await saveTemaOnline();
 };
 
 tema.addEventListener("change", async () => {
+  const oldTema = previousTemaValue || "—";
   const newTema = tema.value.trim();
 
-  if (newTema && newTema !== previousTemaValue) {
+  if (newTema !== previousTemaValue) {
     await addSystemMessage(
-      `Téma bola zmenená: "${previousTemaValue || "—"}" → "${newTema}"`
+      `Téma bola zmenená: "${oldTema}" → "${newTema || "—"}"`
     );
-
-    previousTemaValue = newTema;
   }
 
+  previousTemaValue = newTema;
   syncAssignment();
-
   await saveTemaOnline();
 });
 
@@ -692,33 +664,20 @@ line.addEventListener("keydown", (e) => {
 });
 
 switchBtn.onclick = nextSpeaker;
-
 clearAll.onclick = clearDialog;
-
 downloadBtn.onclick = downloadTxt;
-
 connectRoomBtn.onclick = connectRoom;
-
 offlineModeBtn.onclick = goOffline;
 
 function init() {
   tema.value = choice(TEMY);
-
   previousTemaValue = tema.value;
 
   addParticipant(choice(OBJEKTY));
-
-  addParticipant(
-    choice(
-      OBJEKTY,
-      participants.map(p => p.name)
-    )
-  );
+  addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
 
   syncAssignment();
-
   renderLog();
-
   line.focus();
 }
 
