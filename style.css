@@ -5,7 +5,9 @@
   --muted: 200,205,215;
 }
 
-*{box-sizing:border-box}
+*{
+  box-sizing:border-box;
+}
 
 body{
   margin:0;
@@ -20,14 +22,20 @@ body{
     linear-gradient(180deg, #0f1222 0%, #0b0e1a 100%);
 }
 
-.wrap{ width:min(1100px, 94vw); margin:38px auto; }
+.wrap{
+  width:min(1100px, 94vw);
+  margin:38px auto;
+}
 
 .head h1{
   margin:0 0 6px;
   font-size: clamp(1.4rem, 2.8vw, 2rem);
 }
 
-.sub{ margin:0 0 16px; opacity:.8 }
+.sub{
+  margin:0 0 16px;
+  opacity:.8;
+}
 
 .grid{
   display:grid;
@@ -40,7 +48,9 @@ body{
 }
 
 @media (max-width: 900px){
-  .grid{ grid-template-columns:1fr; }
+  .grid{
+    grid-template-columns:1fr;
+  }
 }
 
 .card{
@@ -51,7 +61,10 @@ body{
   backdrop-filter: blur(10px);
 }
 
-h3{ margin: 0 0 10px; font-size: 1.05rem; }
+h3{
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
 
 .row{
   display:flex;
@@ -60,7 +73,13 @@ h3{ margin: 0 0 10px; font-size: 1.05rem; }
   margin-bottom:10px;
 }
 
-input, textarea{
+.controls{
+  gap:.6rem;
+  flex-wrap:wrap;
+}
+
+input,
+textarea{
   flex:1;
   background: rgba(255,255,255,.08);
   border: 1px solid rgba(255,255,255,.22);
@@ -83,14 +102,19 @@ textarea{
   border-radius:12px;
   cursor:pointer;
   font-weight:700;
+  white-space:nowrap;
 }
 
-.btn:disabled{ opacity:.5; cursor:not-allowed; }
+.btn:hover{
+  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.1));
+}
 
-.btn.ghost{ background: transparent; }
+.btn.ghost{
+  background: transparent;
+}
 
 .btn.solid{
-  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.12));
+  background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.12));
 }
 
 .pillboard{
@@ -101,7 +125,14 @@ textarea{
 }
 
 @media (max-width:640px){
-  .pillboard{ grid-template-columns:1fr; }
+  .pillboard{
+    grid-template-columns:1fr;
+  }
+
+  .row{
+    flex-direction:column;
+    align-items:stretch;
+  }
 }
 
 .pill{
@@ -118,9 +149,14 @@ textarea{
   font-size:.72rem;
 }
 
-.v{ display:block; margin-top:6px; }
+.v{
+  display:block;
+  margin-top:6px;
+}
 
-.muted{ opacity:.75; }
+.muted{
+  opacity:.75;
+}
 
 .participants{
   display:flex;
@@ -175,7 +211,9 @@ textarea{
   padding:6px 10px;
 }
 
-.content{ white-space:pre-wrap; }
+.content{
+  white-space:pre-wrap;
+}
 
 .hr{
   height:1px;
