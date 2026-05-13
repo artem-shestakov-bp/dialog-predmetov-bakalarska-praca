@@ -16,10 +16,25 @@ body{
   place-items:center;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: rgb(var(--text));
+
   background:
-    radial-gradient(1200px 1200px at 10% 10%, rgba(var(--bg1), .28), transparent 60%),
-    radial-gradient(1200px 1200px at 90% 20%, rgba(var(--bg2), .28), transparent 60%),
-    linear-gradient(180deg, #0f1222 0%, #0b0e1a 100%);
+    radial-gradient(
+      1200px 1200px at 10% 10%,
+      rgba(var(--bg1), .28),
+      transparent 60%
+    ),
+
+    radial-gradient(
+      1200px 1200px at 90% 20%,
+      rgba(var(--bg2), .28),
+      transparent 60%
+    ),
+
+    linear-gradient(
+      180deg,
+      #0f1222 0%,
+      #0b0e1a 100%
+    );
 }
 
 .wrap{
@@ -29,7 +44,12 @@ body{
 
 .head h1{
   margin:0 0 6px;
-  font-size: clamp(1.4rem, 2.8vw, 2rem);
+
+  font-size: clamp(
+    1.4rem,
+    2.8vw,
+    2rem
+  );
 }
 
 .sub{
@@ -40,14 +60,15 @@ body{
 .grid{
   display:grid;
   gap:16px;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns:1fr 1fr;
 }
 
 .editor-card{
-  grid-column: 1 / -1;
+  grid-column:1 / -1;
 }
 
-@media (max-width: 900px){
+@media (max-width:900px){
+
   .grid{
     grid-template-columns:1fr;
   }
@@ -55,15 +76,19 @@ body{
 
 .card{
   background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.18);
-  border-radius: 16px;
-  padding: 14px;
+
+  border:1px solid rgba(255,255,255,.18);
+
+  border-radius:16px;
+
+  padding:14px;
+
   backdrop-filter: blur(10px);
 }
 
 h3{
-  margin: 0 0 10px;
-  font-size: 1.05rem;
+  margin:0 0 10px;
+  font-size:1.05rem;
 }
 
 .row{
@@ -81,50 +106,83 @@ h3{
 input,
 textarea{
   flex:1;
+
   background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.22);
-  color: #fff;
-  border-radius: 12px;
-  padding: 10px 12px;
-  outline: none;
+
+  border:1px solid rgba(255,255,255,.22);
+
+  color:#fff;
+
+  border-radius:12px;
+
+  padding:10px 12px;
+
+  outline:none;
 }
 
 textarea{
-  resize: vertical;
-  min-height: 90px;
+  resize:vertical;
+  min-height:90px;
 }
 
 .btn{
   border:1px solid rgba(255,255,255,.25);
-  background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.06)
+    );
+
   color:#fff;
+
   padding:10px 12px;
+
   border-radius:12px;
+
   cursor:pointer;
+
   font-weight:700;
+
   white-space:nowrap;
+
+  transition:.2s;
 }
 
 .btn:hover{
-  background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.1));
+  transform:translateY(-1px);
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.22),
+      rgba(255,255,255,.1)
+    );
 }
 
 .btn.ghost{
-  background: transparent;
+  background:transparent;
 }
 
 .btn.solid{
-  background: linear-gradient(180deg, rgba(255,255,255,.24), rgba(255,255,255,.12));
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,.24),
+      rgba(255,255,255,.12)
+    );
 }
 
 .pillboard{
   display:grid;
   gap:8px;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns:1fr 1fr;
   margin-top:10px;
 }
 
 @media (max-width:640px){
+
   .pillboard{
     grid-template-columns:1fr;
   }
@@ -137,9 +195,12 @@ textarea{
 
 .pill{
   border:1px solid rgba(255,255,255,.22);
+
   background: rgba(255,255,255,.06);
-  border-radius: 12px;
-  padding: 10px 12px;
+
+  border-radius:12px;
+
+  padding:10px 12px;
 }
 
 .k{
@@ -174,11 +235,22 @@ textarea{
 
 .chip{
   border:none;
+
   color:#0b0e1a;
+
   cursor:pointer;
+
   padding:8px 12px;
+
   border-radius:999px;
+
   font-weight:800;
+
+  transition:.2s;
+}
+
+.chip:hover{
+  transform:scale(1.03);
 }
 
 .chip.active{
@@ -187,11 +259,17 @@ textarea{
 
 .log{
   margin-top:12px;
+
   border:1px solid rgba(255,255,255,.22);
+
   background: rgba(255,255,255,.05);
+
   border-radius:12px;
+
   padding:10px;
-  max-height: 380px;
+
+  max-height:380px;
+
   overflow:auto;
 }
 
@@ -204,10 +282,15 @@ textarea{
 
 .badge{
   min-width:2rem;
+
   text-align:center;
+
   font-weight:800;
+
   border-radius:8px;
+
   color:#0b0e1a;
+
   padding:6px 10px;
 }
 
@@ -217,7 +300,10 @@ textarea{
 
 .hr{
   height:1px;
+
   background:rgba(255,255,255,.14);
+
   margin:8px 0;
+
   border:0;
 }
