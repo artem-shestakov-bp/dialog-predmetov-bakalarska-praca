@@ -1,70 +1,61 @@
-
 <!doctype html>
 <html lang="sk">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dialóg predmetov — online</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dialóg predmetov Online</title>
+
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main class="wrap">
-  <header class="head">
-    <h1>🎭 Dialóg predmetov — online režim</h1>
-    <p class="sub">Pridávaj ľubovoľný počet účastníkov, píš dialóg po ťahoch a synchronizuj miestnosť cez Firebase.</p>
-  </header>
 
-  <section class="grid">
-    <div class="card">
-      <h3>1) Online miestnosť</h3>
-      <div class="row wrap-row">
-        <input id="roomId" placeholder="ID miestnosti, napr. bakalarka-1" />
-        <button class="btn solid" id="connectRoom">🌐 Pripojiť</button>
-        <button class="btn ghost" id="offlineMode">Offline</button>
-      </div>
-      <p id="status" class="status">Režim: offline</p>
-      <p class="hint">Pred online použitím vlož svoje Firebase údaje do <code>script.js</code>.</p>
+<div class="container">
+
+  <h1>🎭 Dialóg predmetov</h1>
+
+  <div class="card">
+
+    <h2>🌐 Room</h2>
+
+    <div class="row">
+      <input id="roomId" placeholder="Room ID">
+      <button id="connectRoom">Connect</button>
     </div>
 
-    <div class="card">
-      <h3>2) Téma</h3>
-      <div class="row">
-        <input id="tema" placeholder="Téma (napr. Čo znamená byť užitočný?)" />
-        <button class="btn" id="temaRnd">🎲</button>
-      </div>
-      <div class="pillboard one">
-        <div class="pill"><span class="k">Téma</span><span id="temaOut" class="v">—</span></div>
-      </div>
-    </div>
+  </div>
 
-    <div class="card">
-      <h3>3) Účastníci</h3>
-      <div id="participants" class="participants"></div>
-      <div class="row wrap-row add-user">
-        <input id="newName" placeholder="Meno/rečník, napr. C" />
-        <input id="newObject" placeholder="Predmet, napr. Lampa" />
-        <button class="btn" id="objectRnd">🎲 predmet</button>
-        <button class="btn solid" id="addParticipant">➕ Pridať účastníka</button>
-      </div>
-    </div>
+  <div class="card">
 
-    <div class="card editor-card">
-      <h3>4) Písanie dialógu</h3>
-      <div class="speaker">
-        <span class="muted">Na rade:</span>
-        <select id="whoSelect"></select>
-        <button class="btn" id="nextSpeaker">↪️ Ďalší</button>
-      </div>
-      <textarea id="line" rows="3" placeholder="Napíš repliku. Enter – pridať, Shift+Enter – nový riadok."></textarea>
-      <div class="row wrap-row actions">
-        <button class="btn" id="addLine">➕ Pridať repliku</button>
-        <button class="btn ghost" id="clearAll">🧹 Vyčistiť</button>
-        <button class="btn solid" id="download">⬇️ Stiahnuť .txt</button>
-      </div>
-      <div id="log" class="log" aria-live="polite"></div>
-    </div>
-  </section>
-</main>
+    <h2>👥 Účastníci</h2>
+
+    <div id="participants"></div>
+
+    <button id="addParticipant">
+      ➕ Pridať účastníka
+    </button>
+
+  </div>
+
+  <div class="card">
+
+    <h2>💬 Dialóg</h2>
+
+    <textarea
+      id="line"
+      placeholder="Napíš správu..."
+    ></textarea>
+
+    <button id="addLine">
+      ➕ Poslať
+    </button>
+
+    <div id="log"></div>
+
+  </div>
+
+</div>
+
 <script type="module" src="script.js"></script>
+
 </body>
 </html>
