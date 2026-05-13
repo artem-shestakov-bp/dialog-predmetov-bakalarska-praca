@@ -103,6 +103,7 @@ const temaRnd = $("temaRnd");
 
 const objInput = $("objInput");
 const addParticipantBtn = $("addParticipant");
+const participantRnd = $("participantRnd");
 const participantsWrap = $("participants");
 const participantsOut = $("participantsOut");
 
@@ -116,6 +117,7 @@ const downloadBtn = $("download");
 
 const roomInput = $("roomId");
 const connectRoomBtn = $("connectRoom");
+const offlineModeBtn = $("offlineMode");
 const onlineStatus = $("onlineStatus");
 
 let participants = [];
@@ -131,7 +133,6 @@ let unsubscribeRoomMeta = null;
 
 function syncAssignment() {
   temaOut.textContent = tema.value || "—";
-
   participantsOut.textContent =
     participants.map(p => p.name).join(", ") || "—";
 }
@@ -220,7 +221,6 @@ async function addParticipant(name = null) {
   if (!finalName) return;
 
   const participant = createParticipant(finalName);
-
   objInput.value = "";
 
   if (online && roomId) {
@@ -280,7 +280,6 @@ async function pushLine() {
     } catch (error) {
       console.error("Firebase write error:", error);
       alert("Chyba Firebase. Správa bola uložená iba lokálne.");
-
       entries.push(message);
       renderLog();
     }
@@ -399,6 +398,35 @@ function connectRoom() {
   });
 }
 
+function goOffline() {
+  if (unsubscribeMessages) unsubscribeMessages();
+  if (unsubscribeParticipants) unsubscribeParticipants();
+  if (unsubscribeRoomMeta) unsubscribeRoomMeta();
+
+  unsubscribeMessages = null;
+  unsubscribeParticipants = null;
+  unsubscribeRoomMeta = null;
+
+  online = false;
+  roomId = "";
+
+  roomInput.value = "";
+  onlineStatus.textContent = "Offline režim";
+
+  entries = [];
+  participants = [];
+  currentIndex = 0;
+
+  addParticipant(choice(OBJEKTY));
+  addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
+
+  renderLog();
+  renderParticipants();
+  syncAssignment();
+
+  line.focus();
+}
+
 async function saveTemaOnline() {
   if (!online || !roomId) return;
 
@@ -455,7 +483,6 @@ function downloadTxt() {
   });
 
   const a = document.createElement("a");
-
   a.href = URL.createObjectURL(blob);
 
   const safe = temaText
@@ -465,7 +492,6 @@ function downloadTxt() {
   a.download = `dialog-predmetov_${safe || "zaznam"}.txt`;
 
   document.body.appendChild(a);
-
   a.click();
 
   setTimeout(() => {
@@ -484,6 +510,13 @@ tema.addEventListener("input", async () => {
   syncAssignment();
   await saveTemaOnline();
 });
+
+participantRnd.onclick = () => {
+  objInput.value = choice(
+    OBJEKTY,
+    participants.map(p => p.name)
+  );
+};
 
 addParticipantBtn.onclick = () => {
   addParticipant();
@@ -506,12 +539,10 @@ line.addEventListener("keydown", (e) => {
 });
 
 switchBtn.onclick = nextSpeaker;
-
 clearAll.onclick = clearDialog;
-
 downloadBtn.onclick = downloadTxt;
-
 connectRoomBtn.onclick = connectRoom;
+offlineModeBtn.onclick = goOffline;
 
 function init() {
   tema.value = choice(TEMY);
