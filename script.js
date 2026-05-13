@@ -127,6 +127,8 @@ let entries = [];
 let roomId = "";
 let online = false;
 
+let previousTemaValue = "";
+
 let unsubscribeMessages = null;
 let unsubscribeParticipants = null;
 let unsubscribeRoomMeta = null;
@@ -194,7 +196,7 @@ function renderParticipants() {
 
     if (!isMyParticipant(p)) {
       btn.style.opacity = ".45";
-      btn.title = "Cudzí účastník - nemôžeš za neho písať";
+      btn.title = "Cudzí účastník";
     }
 
     btn.onclick = () => {
@@ -221,24 +223,34 @@ function renderLog() {
 
   entries.forEach((e, i) => {
     const row = document.createElement("div");
+
     row.className = "line";
 
     const badge = document.createElement("div");
+
     badge.className = "badge";
+
     badge.textContent = e.speakerName || "?";
-    badge.style.background = e.speakerColor || "#4ea1ff";
+
+    badge.style.background =
+      e.speakerColor || "#4ea1ff";
 
     const content = document.createElement("div");
+
     content.className = "content";
+
     content.textContent = e.text || "";
 
     row.appendChild(badge);
     row.appendChild(content);
+
     log.appendChild(row);
 
     if (i < entries.length - 1) {
       const hr = document.createElement("div");
+
       hr.className = "hr";
+
       log.appendChild(hr);
     }
   });
@@ -288,7 +300,7 @@ function nextSpeaker() {
   const ownParticipants = getOwnParticipants();
 
   if (!ownParticipants.length) {
-    alert("Nemáš vlastného účastníka. Najprv ho pridaj.");
+    alert("Nemáš vlastného účastníka.");
     currentSpeakerId = null;
     renderParticipants();
     updateWho();
@@ -308,6 +320,30 @@ function nextSpeaker() {
 
   renderParticipants();
   updateWho();
+}
+
+async function addSystemMessage(text) {
+  const message = {
+    speakerId: "system",
+    speakerOwnerId: "system",
+    speakerName: "SYSTEM",
+    speakerColor: "#ffffff",
+    text,
+    localCreatedAt: Date.now()
+  };
+
+  if (online && roomId) {
+    await addDoc(
+      collection(db, "rooms", roomId, "messages"),
+      {
+        ...message,
+        createdAt: serverTimestamp()
+      }
+    );
+  } else {
+    entries.push(message);
+    renderLog();
+  }
 }
 
 async function pushLine() {
@@ -358,8 +394,11 @@ async function pushLine() {
       );
     } catch (error) {
       console.error("Firebase write error:", error);
-      alert("Chyba Firebase. Správa bola uložená iba lokálne.");
+
+      alert("Chyba Firebase.");
+
       entries.push(message);
+
       renderLog();
     }
   } else {
@@ -368,6 +407,7 @@ async function pushLine() {
   }
 
   nextSpeaker();
+
   line.focus();
 }
 
@@ -393,7 +433,8 @@ function connectRoom() {
   renderLog();
   renderParticipants();
 
-  onlineStatus.textContent = "Pripájam sa do miestnosti: " + roomId;
+  onlineStatus.textContent =
+    "Pripájam sa do miestnosti: " + roomId;
 
   const messagesQuery = query(
     collection(db, "rooms", roomId, "messages"),
@@ -420,12 +461,9 @@ function connectRoom() {
       });
 
       renderLog();
-      onlineStatus.textContent = "Online miestnosť: " + roomId;
-    },
-    (error) => {
-      console.error("Firebase messages listen error:", error);
-      onlineStatus.textContent = "Chyba Firebase messages";
-      alert("Firebase messages realtime zlyhalo.");
+
+      onlineStatus.textContent =
+        "Online miestnosť: " + roomId;
     }
   );
 
@@ -453,12 +491,8 @@ function connectRoom() {
       });
 
       ensureValidCurrentSpeaker();
+
       renderParticipants();
-    },
-    (error) => {
-      console.error("Firebase participants listen error:", error);
-      onlineStatus.textContent = "Chyba Firebase participants";
-      alert("Firebase participants realtime zlyhalo.");
     }
   );
 
@@ -471,6 +505,9 @@ function connectRoom() {
 
     if (data.tema && tema.value !== data.tema) {
       tema.value = data.tema;
+
+      previousTemaValue = data.tema;
+
       syncAssignment();
     }
   });
@@ -489,6 +526,7 @@ function goOffline() {
   roomId = "";
 
   roomInput.value = "";
+
   onlineStatus.textContent = "Offline režim";
 
   entries = [];
@@ -496,7 +534,13 @@ function goOffline() {
   currentSpeakerId = null;
 
   addParticipant(choice(OBJEKTY));
-  addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
+
+  addParticipant(
+    choice(
+      OBJEKTY,
+      participants.map(p => p.name)
+    )
+  );
 
   renderLog();
   renderParticipants();
@@ -539,7 +583,6 @@ async function clearDialog() {
       await Promise.all(deletes);
     } catch (error) {
       console.error("Firebase delete error:", error);
-      alert("Nepodarilo sa vyčistiť online miestnosť.");
     }
   }
 }
@@ -550,26 +593,37 @@ function downloadTxt() {
   const header =
     `Dialóg predmetov\n` +
     `Téma: ${tema.value || "—"}\n` +
-    `Účastníci: ${participants.map(p => p.name).join(", ") || "—"}\n\n`;
+    `Účastníci: ${
+      participants.map(p => p.name).join(", ") || "—"
+    }\n\n`;
 
   const body = entries
     .map(e => `${e.speakerName}: ${e.text}`)
     .join("\n");
 
-  const blob = new Blob([header + body + "\n"], {
-    type: "text/plain;charset=utf-8"
-  });
+  const blob = new Blob(
+    [header + body + "\n"],
+    {
+      type: "text/plain;charset=utf-8"
+    }
+  );
 
   const a = document.createElement("a");
+
   a.href = URL.createObjectURL(blob);
 
   const safe = temaText
     .toLowerCase()
-    .replace(/[^a-z0-9áäčďéíĺľňóôŕšťúýž_-]+/gi, "-");
+    .replace(
+      /[^a-z0-9áäčďéíĺľňóôŕšťúýž_-]+/gi,
+      "-"
+    );
 
-  a.download = `dialog-predmetov_${safe || "zaznam"}.txt`;
+  a.download =
+    `dialog-predmetov_${safe || "zaznam"}.txt`;
 
   document.body.appendChild(a);
+
   a.click();
 
   setTimeout(() => {
@@ -579,13 +633,34 @@ function downloadTxt() {
 }
 
 temaRnd.onclick = async () => {
+  const oldTema = tema.value || "—";
+
   tema.value = choice(TEMY);
+
+  await addSystemMessage(
+    `Téma bola zmenená: "${oldTema}" → "${tema.value}"`
+  );
+
+  previousTemaValue = tema.value;
+
   syncAssignment();
+
   await saveTemaOnline();
 };
 
-tema.addEventListener("input", async () => {
+tema.addEventListener("change", async () => {
+  const newTema = tema.value.trim();
+
+  if (newTema && newTema !== previousTemaValue) {
+    await addSystemMessage(
+      `Téma bola zmenená: "${previousTemaValue || "—"}" → "${newTema}"`
+    );
+
+    previousTemaValue = newTema;
+  }
+
   syncAssignment();
+
   await saveTemaOnline();
 });
 
@@ -617,19 +692,33 @@ line.addEventListener("keydown", (e) => {
 });
 
 switchBtn.onclick = nextSpeaker;
+
 clearAll.onclick = clearDialog;
+
 downloadBtn.onclick = downloadTxt;
+
 connectRoomBtn.onclick = connectRoom;
+
 offlineModeBtn.onclick = goOffline;
 
 function init() {
   tema.value = choice(TEMY);
 
+  previousTemaValue = tema.value;
+
   addParticipant(choice(OBJEKTY));
-  addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
+
+  addParticipant(
+    choice(
+      OBJEKTY,
+      participants.map(p => p.name)
+    )
+  );
 
   syncAssignment();
+
   renderLog();
+
   line.focus();
 }
 
