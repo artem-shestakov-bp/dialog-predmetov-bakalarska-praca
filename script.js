@@ -78,13 +78,20 @@ const COLORS = [
   "#b388ff",
   "#ff9f1c",
   "#00c2a8",
-  "#f72585"
+  "#f72585",
+  "#90be6d",
+  "#f94144"
 ];
 
 const $ = (id) => document.getElementById(id);
 
 function choice(arr, exclude = []) {
   const pool = arr.filter(x => !exclude.includes(x));
+
+  if (!pool.length) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -113,13 +120,15 @@ let participants = [];
 let currentIndex = 0;
 let entries = [];
 
-let roomId = null;
-let unsubscribe = null;
+let roomId = "";
+let unsubscribeMessages = null;
 let online = false;
 
 function syncAssignment() {
   temaOut.textContent = tema.value || "—";
-  participantsOut.textContent = participants.map(p => p.name).join(", ") || "—";
+
+  participantsOut.textContent =
+    participants.map(p => p.name).join(", ") || "—";
 }
 
 function createParticipant(name) {
@@ -138,11 +147,16 @@ function addParticipant(name = null) {
 
   if (!finalName) return;
 
-  participants.push(createParticipant(finalName));
+  const participant = createParticipant(finalName);
+
+  participants.push(participant);
+
   objInput.value = "";
 
   renderParticipants();
+
   syncAssignment();
+
   updateWho();
 }
 
@@ -153,12 +167,16 @@ function renderParticipants() {
     const btn = document.createElement("button");
 
     btn.className = "chip" + (index === currentIndex ? " active" : "");
+
     btn.textContent = p.name;
+
     btn.style.background = p.color;
 
     btn.onclick = () => {
       currentIndex = index;
+
       renderParticipants();
+
       updateWho();
     };
 
@@ -172,6 +190,10 @@ function updateWho() {
     return;
   }
 
+  if (currentIndex >= participants.length) {
+    currentIndex = 0;
+  }
+
   whoNow.textContent = participants[currentIndex].name;
 }
 
@@ -181,6 +203,7 @@ function nextSpeaker() {
   currentIndex = (currentIndex + 1) % participants.length;
 
   renderParticipants();
+
   updateWho();
 }
 
@@ -207,16 +230,28 @@ async function pushLine() {
   line.value = "";
 
   if (online && roomId) {
-    await addDoc(collection(db, "rooms", roomId, "messages"), {
-      ...message,
-      createdAt: serverTimestamp()
-    });
+    try {
+      await addDoc(
+        collection(db, "rooms", roomId, "messages"),
+        {
+          ...message,
+          createdAt: serverTimestamp()
+        }
+      );
+    } catch (error) {
+      console.error("Firebase write error:", error);
+      alert("Chyba Firebase. Správa bola uložená iba lokálne.");
+
+      entries.push(message);
+      renderLog();
+    }
   } else {
     entries.push(message);
     renderLog();
   }
 
   nextSpeaker();
+
   line.focus();
 }
 
@@ -229,12 +264,12 @@ function renderLog() {
 
     const badge = document.createElement("div");
     badge.className = "badge";
-    badge.textContent = e.speakerName;
-    badge.style.background = e.speakerColor;
+    badge.textContent = e.speakerName || "?";
+    badge.style.background = e.speakerColor || "#4ea1ff";
 
     const content = document.createElement("div");
     content.className = "content";
-    content.textContent = e.text;
+    content.textContent = e.text || "";
 
     row.appendChild(badge);
     row.appendChild(content);
@@ -261,26 +296,48 @@ function connectRoom() {
   roomId = value;
   online = true;
 
-  if (unsubscribe) {
-    unsubscribe();
+  if (unsubscribeMessages) {
+    unsubscribeMessages();
   }
+
+  entries = [];
+  renderLog();
+
+  onlineStatus.textContent = "Pripájam sa do miestnosti: " + roomId;
 
   const q = query(
     collection(db, "rooms", roomId, "messages"),
     orderBy("createdAt")
   );
 
-  unsubscribe = onSnapshot(q, (snapshot) => {
-    entries = [];
+  unsubscribeMessages = onSnapshot(
+    q,
+    (snapshot) => {
+      entries = [];
 
-    snapshot.forEach((doc) => {
-      entries.push(doc.data());
-    });
+      snapshot.forEach((doc) => {
+        const data = doc.data();
 
-    renderLog();
-  });
+        entries.push({
+          speakerId: data.speakerId,
+          speakerName: data.speakerName,
+          speakerColor: data.speakerColor,
+          text: data.text,
+          localCreatedAt: data.localCreatedAt,
+          createdAt: data.createdAt
+        });
+      });
 
-  onlineStatus.textContent = "Online miestnosť: " + roomId;
+      renderLog();
+
+      onlineStatus.textContent = "Online miestnosť: " + roomId;
+    },
+    (error) => {
+      console.error("Firebase listen error:", error);
+      onlineStatus.textContent = "Chyba pripojenia Firebase";
+      alert("Firebase realtime pripojenie zlyhalo. Skontroluj Rules.");
+    }
+  );
 }
 
 async function clearDialog() {
@@ -290,11 +347,22 @@ async function clearDialog() {
   renderLog();
 
   if (online && roomId) {
-    const snap = await getDocs(collection(db, "rooms", roomId, "messages"));
+    try {
+      const snap = await getDocs(
+        collection(db, "rooms", roomId, "messages")
+      );
 
-    snap.forEach(async (docItem) => {
-      await deleteDoc(docItem.ref);
-    });
+      const deletes = [];
+
+      snap.forEach((docItem) => {
+        deletes.push(deleteDoc(docItem.ref));
+      });
+
+      await Promise.all(deletes);
+    } catch (error) {
+      console.error("Firebase delete error:", error);
+      alert("Nepodarilo sa vyčistiť online miestnosť.");
+    }
   }
 }
 
@@ -315,6 +383,7 @@ function downloadTxt() {
   });
 
   const a = document.createElement("a");
+
   a.href = URL.createObjectURL(blob);
 
   const safe = temaText
@@ -324,6 +393,7 @@ function downloadTxt() {
   a.download = `dialog-predmetov_${safe || "zaznam"}.txt`;
 
   document.body.appendChild(a);
+
   a.click();
 
   setTimeout(() => {
@@ -371,10 +441,13 @@ function init() {
   tema.value = choice(TEMY);
 
   addParticipant(choice(OBJEKTY));
+
   addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
 
   syncAssignment();
+
   renderLog();
+
   line.focus();
 }
 
