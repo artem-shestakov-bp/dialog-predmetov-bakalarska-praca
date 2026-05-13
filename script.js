@@ -7,12 +7,12 @@ import {
 
 // 1) Zmeň tieto údaje podľa Firebase Console → Project settings → Your apps → Web app.
 const firebaseConfig = {
-  apiKey: "PASTE_API_KEY_HERE",
-  authDomain: "PASTE_PROJECT_ID.firebaseapp.com",
-  projectId: "PASTE_PROJECT_ID",
-  storageBucket: "PASTE_PROJECT_ID.appspot.com",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyAIOjW8KaG_9WDcsF0BnwYqr_zp47zN8j4",
+  authDomain: "bakalarska-praca-b0f89.firebaseapp.com",
+  projectId: "bakalarska-praca-b0f89",
+  storageBucket: "bakalarska-praca-b0f89.firebasestorage.app",
+  messagingSenderId: "69722305708",
+  appId: "1:69722305708:web:cd042b93293b5357705b09"
 };
 
 const TEMY = [
