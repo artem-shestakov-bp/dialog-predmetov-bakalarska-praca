@@ -4,14 +4,17 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Dialóg predmetov: Bakalarska praca</title>
-  <link rel="stylesheet" href="style.css">
+
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 
 <main class="wrap">
   <header class="head">
     <h1>🎭 Dialóg predmetov: Bakalarska praca</h1>
-    <p class="sub">Zadaj tému a predmety. Píšte dialóg po ťahoch. Účastníkov môže byť viac a dialóg môže bežať online cez Firebase.</p>
+    <p class="sub">
+      Zadaj tému a predmety. Píšte dialóg po ťahoch. Účastníkov môže byť viac a dialóg môže bežať online cez Firebase.
+    </p>
   </header>
 
   <section class="grid">
@@ -47,6 +50,7 @@
           <span class="k">Téma</span>
           <span id="temaOut" class="v">—</span>
         </div>
+
         <div class="pill">
           <span class="k">Účastníci</span>
           <span id="participantsOut" class="v">—</span>
@@ -66,7 +70,7 @@
         <textarea id="line" rows="3" placeholder="Napíš repliku. Enter – pridať, Shift+Enter – nový riadok."></textarea>
       </div>
 
-      <div class="row" style="gap:.6rem; flex-wrap:wrap">
+      <div class="row controls">
         <button class="btn" id="addLine">➕ Pridať repliku</button>
         <button class="btn" id="switch">↔️ Ďalší účastník</button>
         <button class="btn ghost" id="clearAll">🧹 Vyčistiť</button>
@@ -79,6 +83,7 @@
   </section>
 </main>
 
-<script type="module" src="script.js"></script>
+<script type="module" src="script.js?v=2"></script>
+
 </body>
 </html>
