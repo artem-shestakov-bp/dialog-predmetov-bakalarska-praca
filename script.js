@@ -3,6 +3,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
   getFirestore,
   collection,
+  doc,
+  setDoc,
   addDoc,
   query,
   orderBy,
@@ -121,67 +123,17 @@ let currentIndex = 0;
 let entries = [];
 
 let roomId = "";
-let unsubscribeMessages = null;
 let online = false;
+
+let unsubscribeMessages = null;
+let unsubscribeParticipants = null;
+let unsubscribeRoomMeta = null;
 
 function syncAssignment() {
   temaOut.textContent = tema.value || "—";
 
   participantsOut.textContent =
     participants.map(p => p.name).join(", ") || "—";
-}
-
-function createParticipant(name) {
-  return {
-    id: crypto.randomUUID(),
-    name,
-    color: COLORS[participants.length % COLORS.length]
-  };
-}
-
-function addParticipant(name = null) {
-  const finalName =
-    name ||
-    objInput.value.trim() ||
-    choice(OBJEKTY, participants.map(p => p.name));
-
-  if (!finalName) return;
-
-  const participant = createParticipant(finalName);
-
-  participants.push(participant);
-
-  objInput.value = "";
-
-  renderParticipants();
-
-  syncAssignment();
-
-  updateWho();
-}
-
-function renderParticipants() {
-  participantsWrap.innerHTML = "";
-
-  participants.forEach((p, index) => {
-    const btn = document.createElement("button");
-
-    btn.className = "chip" + (index === currentIndex ? " active" : "");
-
-    btn.textContent = p.name;
-
-    btn.style.background = p.color;
-
-    btn.onclick = () => {
-      currentIndex = index;
-
-      renderParticipants();
-
-      updateWho();
-    };
-
-    participantsWrap.appendChild(btn);
-  });
 }
 
 function updateWho() {
@@ -197,13 +149,100 @@ function updateWho() {
   whoNow.textContent = participants[currentIndex].name;
 }
 
+function renderParticipants() {
+  participantsWrap.innerHTML = "";
+
+  participants.forEach((p, index) => {
+    const btn = document.createElement("button");
+
+    btn.className = "chip" + (index === currentIndex ? " active" : "");
+    btn.textContent = p.name;
+    btn.style.background = p.color;
+
+    btn.onclick = () => {
+      currentIndex = index;
+      renderParticipants();
+      updateWho();
+    };
+
+    participantsWrap.appendChild(btn);
+  });
+
+  syncAssignment();
+  updateWho();
+}
+
+function renderLog() {
+  log.innerHTML = "";
+
+  entries.forEach((e, i) => {
+    const row = document.createElement("div");
+    row.className = "line";
+
+    const badge = document.createElement("div");
+    badge.className = "badge";
+    badge.textContent = e.speakerName || "?";
+    badge.style.background = e.speakerColor || "#4ea1ff";
+
+    const content = document.createElement("div");
+    content.className = "content";
+    content.textContent = e.text || "";
+
+    row.appendChild(badge);
+    row.appendChild(content);
+    log.appendChild(row);
+
+    if (i < entries.length - 1) {
+      const hr = document.createElement("div");
+      hr.className = "hr";
+      log.appendChild(hr);
+    }
+  });
+
+  log.scrollTop = log.scrollHeight;
+}
+
+function createParticipant(name) {
+  return {
+    id: crypto.randomUUID(),
+    name,
+    color: COLORS[participants.length % COLORS.length],
+    localCreatedAt: Date.now()
+  };
+}
+
+async function addParticipant(name = null) {
+  const finalName =
+    name ||
+    objInput.value.trim() ||
+    choice(OBJEKTY, participants.map(p => p.name));
+
+  if (!finalName) return;
+
+  const participant = createParticipant(finalName);
+
+  objInput.value = "";
+
+  if (online && roomId) {
+    await setDoc(
+      doc(db, "rooms", roomId, "participants", participant.id),
+      {
+        ...participant,
+        createdAt: serverTimestamp()
+      }
+    );
+  } else {
+    participants.push(participant);
+    renderParticipants();
+  }
+}
+
 function nextSpeaker() {
   if (!participants.length) return;
 
   currentIndex = (currentIndex + 1) % participants.length;
 
   renderParticipants();
-
   updateWho();
 }
 
@@ -251,38 +290,7 @@ async function pushLine() {
   }
 
   nextSpeaker();
-
   line.focus();
-}
-
-function renderLog() {
-  log.innerHTML = "";
-
-  entries.forEach((e, i) => {
-    const row = document.createElement("div");
-    row.className = "line";
-
-    const badge = document.createElement("div");
-    badge.className = "badge";
-    badge.textContent = e.speakerName || "?";
-    badge.style.background = e.speakerColor || "#4ea1ff";
-
-    const content = document.createElement("div");
-    content.className = "content";
-    content.textContent = e.text || "";
-
-    row.appendChild(badge);
-    row.appendChild(content);
-    log.appendChild(row);
-
-    if (i < entries.length - 1) {
-      const hr = document.createElement("div");
-      hr.className = "hr";
-      log.appendChild(hr);
-    }
-  });
-
-  log.scrollTop = log.scrollHeight;
 }
 
 function connectRoom() {
@@ -296,27 +304,31 @@ function connectRoom() {
   roomId = value;
   online = true;
 
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-  }
+  if (unsubscribeMessages) unsubscribeMessages();
+  if (unsubscribeParticipants) unsubscribeParticipants();
+  if (unsubscribeRoomMeta) unsubscribeRoomMeta();
 
   entries = [];
+  participants = [];
+  currentIndex = 0;
+
   renderLog();
+  renderParticipants();
 
   onlineStatus.textContent = "Pripájam sa do miestnosti: " + roomId;
 
-  const q = query(
+  const messagesQuery = query(
     collection(db, "rooms", roomId, "messages"),
     orderBy("createdAt")
   );
 
   unsubscribeMessages = onSnapshot(
-    q,
+    messagesQuery,
     (snapshot) => {
       entries = [];
 
-      snapshot.forEach((doc) => {
-        const data = doc.data();
+      snapshot.forEach((docItem) => {
+        const data = docItem.data();
 
         entries.push({
           speakerId: data.speakerId,
@@ -329,14 +341,74 @@ function connectRoom() {
       });
 
       renderLog();
-
       onlineStatus.textContent = "Online miestnosť: " + roomId;
     },
     (error) => {
-      console.error("Firebase listen error:", error);
-      onlineStatus.textContent = "Chyba pripojenia Firebase";
-      alert("Firebase realtime pripojenie zlyhalo. Skontroluj Rules.");
+      console.error("Firebase messages listen error:", error);
+      onlineStatus.textContent = "Chyba Firebase messages";
+      alert("Firebase messages realtime zlyhalo. Skontroluj Rules.");
     }
+  );
+
+  const participantsQuery = query(
+    collection(db, "rooms", roomId, "participants"),
+    orderBy("createdAt")
+  );
+
+  unsubscribeParticipants = onSnapshot(
+    participantsQuery,
+    (snapshot) => {
+      participants = [];
+
+      snapshot.forEach((docItem) => {
+        const data = docItem.data();
+
+        participants.push({
+          id: data.id || docItem.id,
+          name: data.name,
+          color: data.color,
+          localCreatedAt: data.localCreatedAt,
+          createdAt: data.createdAt
+        });
+      });
+
+      if (currentIndex >= participants.length) {
+        currentIndex = 0;
+      }
+
+      renderParticipants();
+    },
+    (error) => {
+      console.error("Firebase participants listen error:", error);
+      onlineStatus.textContent = "Chyba Firebase participants";
+      alert("Firebase participants realtime zlyhalo. Skontroluj Rules.");
+    }
+  );
+
+  const roomRef = doc(db, "rooms", roomId);
+
+  unsubscribeRoomMeta = onSnapshot(roomRef, (snapshot) => {
+    if (!snapshot.exists()) return;
+
+    const data = snapshot.data();
+
+    if (data.tema && tema.value !== data.tema) {
+      tema.value = data.tema;
+      syncAssignment();
+    }
+  });
+}
+
+async function saveTemaOnline() {
+  if (!online || !roomId) return;
+
+  await setDoc(
+    doc(db, "rooms", roomId),
+    {
+      tema: tema.value || "",
+      updatedAt: serverTimestamp()
+    },
+    { merge: true }
   );
 }
 
@@ -402,12 +474,16 @@ function downloadTxt() {
   }, 0);
 }
 
-temaRnd.onclick = () => {
+temaRnd.onclick = async () => {
   tema.value = choice(TEMY);
   syncAssignment();
+  await saveTemaOnline();
 };
 
-tema.addEventListener("input", syncAssignment);
+tema.addEventListener("input", async () => {
+  syncAssignment();
+  await saveTemaOnline();
+});
 
 addParticipantBtn.onclick = () => {
   addParticipant();
@@ -441,13 +517,10 @@ function init() {
   tema.value = choice(TEMY);
 
   addParticipant(choice(OBJEKTY));
-
   addParticipant(choice(OBJEKTY, participants.map(p => p.name)));
 
   syncAssignment();
-
   renderLog();
-
   line.focus();
 }
 
