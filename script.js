@@ -131,8 +131,15 @@ let unsubscribeMessages = null;
 let unsubscribeParticipants = null;
 let unsubscribeRoomMeta = null;
 
+const clientId =
+  localStorage.getItem("dialog-client-id") ||
+  crypto.randomUUID();
+
+localStorage.setItem("dialog-client-id", clientId);
+
 function syncAssignment() {
   temaOut.textContent = tema.value || "—";
+
   participantsOut.textContent =
     participants.map(p => p.name).join(", ") || "—";
 }
@@ -147,7 +154,18 @@ function updateWho() {
     currentIndex = 0;
   }
 
-  whoNow.textContent = participants[currentIndex].name;
+  const speaker = participants[currentIndex];
+
+  if (
+    online &&
+    speaker &&
+    speaker.ownerId &&
+    speaker.ownerId !== clientId
+  ) {
+    whoNow.textContent = speaker.name + " (cudzí)";
+  } else {
+    whoNow.textContent = speaker.name;
+  }
 }
 
 function renderParticipants() {
@@ -160,9 +178,29 @@ function renderParticipants() {
     btn.textContent = p.name;
     btn.style.background = p.color;
 
+    if (
+      online &&
+      p.ownerId &&
+      p.ownerId !== clientId
+    ) {
+      btn.style.opacity = ".45";
+      btn.title = "Cudzí účastník - nemôžeš za neho písať";
+    }
+
     btn.onclick = () => {
+      if (
+        online &&
+        p.ownerId &&
+        p.ownerId !== clientId
+      ) {
+        alert("Nemôžeš vybrať cudzieho účastníka.");
+        return;
+      }
+
       currentIndex = index;
+
       renderParticipants();
+
       updateWho();
     };
 
@@ -206,6 +244,7 @@ function renderLog() {
 function createParticipant(name) {
   return {
     id: crypto.randomUUID(),
+    ownerId: clientId,
     name,
     color: COLORS[participants.length % COLORS.length],
     localCreatedAt: Date.now()
@@ -221,6 +260,7 @@ async function addParticipant(name = null) {
   if (!finalName) return;
 
   const participant = createParticipant(finalName);
+
   objInput.value = "";
 
   if (online && roomId) {
@@ -237,10 +277,29 @@ async function addParticipant(name = null) {
   }
 }
 
+function findNextOwnParticipantIndex(startIndex) {
+  if (!participants.length) return 0;
+
+  for (let step = 1; step <= participants.length; step++) {
+    const index = (startIndex + step) % participants.length;
+    const p = participants[index];
+
+    if (
+      !online ||
+      !p.ownerId ||
+      p.ownerId === clientId
+    ) {
+      return index;
+    }
+  }
+
+  return startIndex;
+}
+
 function nextSpeaker() {
   if (!participants.length) return;
 
-  currentIndex = (currentIndex + 1) % participants.length;
+  currentIndex = findNextOwnParticipantIndex(currentIndex);
 
   renderParticipants();
   updateWho();
@@ -258,8 +317,18 @@ async function pushLine() {
 
   const speaker = participants[currentIndex];
 
+  if (
+    online &&
+    speaker.ownerId &&
+    speaker.ownerId !== clientId
+  ) {
+    alert("Nemôžeš písať za cudzieho účastníka.");
+    return;
+  }
+
   const message = {
     speakerId: speaker.id,
+    speakerOwnerId: speaker.ownerId || clientId,
     speakerName: speaker.name,
     speakerColor: speaker.color,
     text: txt,
@@ -331,6 +400,7 @@ function connectRoom() {
 
         entries.push({
           speakerId: data.speakerId,
+          speakerOwnerId: data.speakerOwnerId,
           speakerName: data.speakerName,
           speakerColor: data.speakerColor,
           text: data.text,
@@ -364,6 +434,7 @@ function connectRoom() {
 
         participants.push({
           id: data.id || docItem.id,
+          ownerId: data.ownerId || "",
           name: data.name,
           color: data.color,
           localCreatedAt: data.localCreatedAt,
@@ -371,7 +442,24 @@ function connectRoom() {
         });
       });
 
-      if (currentIndex >= participants.length) {
+      if (participants.length) {
+        const current = participants[currentIndex];
+
+        if (
+          !current ||
+          (
+            online &&
+            current.ownerId &&
+            current.ownerId !== clientId
+          )
+        ) {
+          const ownIndex = participants.findIndex(
+            p => !p.ownerId || p.ownerId === clientId
+          );
+
+          currentIndex = ownIndex >= 0 ? ownIndex : 0;
+        }
+      } else {
         currentIndex = 0;
       }
 
