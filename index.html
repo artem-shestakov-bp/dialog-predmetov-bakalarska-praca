@@ -1,287 +1,70 @@
+
 <!doctype html>
 <html lang="sk">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dialóg predmetov: Bakalarska praca (Artem  Shestakov)</title>
-
-  <style>
-    :root{
-      --bg1: 255,99,132;
-      --bg2: 99,132,255;
-      --text: 245,247,250;
-      --muted: 200,205,215;
-      --a: 78,161,255;   /* farba rečníka A */
-      --b: 255,111,177;  /* farba rečníka B */
-    }
-    *{box-sizing:border-box}
-    body{
-      margin:0; min-height:100svh; display:grid; place-items:center;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      color: rgb(var(--text));
-      background:
-        radial-gradient(1200px 1200px at 10% 10%, rgba(var(--bg1), .28), transparent 60%),
-        radial-gradient(1200px 1200px at 90% 20%, rgba(var(--bg2), .28), transparent 60%),
-        linear-gradient(180deg, #0f1222 0%, #0b0e1a 100%);
-    }
-    .wrap{ width:min(1100px, 94vw); margin:38px auto; }
-    .head h1{ margin:0 0 6px; font-size: clamp(1.4rem, 2.8vw, 2rem); }
-    .sub{ margin:0 0 16px; opacity:.8 }
-
-    .grid{ display:grid; gap:16px; grid-template-columns: 1.1fr 1.2fr; }
-    @media (max-width: 900px){ .grid{ grid-template-columns:1fr; } }
-
-    .card{
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 16px;
-      padding: 14px;
-      backdrop-filter: blur(10px);
-    }
-    h3{ margin: 0 0 10px; font-size: 1.05rem; }
-
-    .row{ display:flex; gap:10px; align-items:center; }
-    input, textarea{
-      flex:1;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.22);
-      color: #fff;
-      border-radius: 12px;
-      padding: 10px 12px;
-      outline: none;
-    }
-    textarea{ resize: vertical; min-height: 90px; }
-
-    .btn{
-      border:1px solid rgba(255,255,255,.25);
-      background: linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
-      color:#fff; padding:10px 12px; border-radius:12px; cursor:pointer;
-    }
-    .btn:disabled{ opacity:.5; cursor:not-allowed; }
-    .btn.ghost{ background: transparent; }
-    .btn.solid{ background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.12)); }
-
-    .pillboard{ display:grid; gap:8px; grid-template-columns: 1fr 1fr 1fr; margin-top:10px; }
-    @media (max-width:640px){ .pillboard{ grid-template-columns:1fr; } }
-    .pill{
-      border:1px solid rgba(255,255,255,.22);
-      background: rgba(255,255,255,.06);
-      border-radius: 12px; padding: 10px 12px;
-    }
-    .k{ display:block; text-transform:uppercase; opacity:.7; font-size:.72rem; }
-    .v{ display:block; margin-top:6px; }
-
-    .muted{ opacity:.75; }
-    .speaker{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
-    .chip{
-      border:none; color:#0b0e1a; cursor:pointer;
-      padding:8px 12px; border-radius:999px; font-weight:700;
-    }
-    .chip-a{ background: rgb(var(--a)); }
-    .chip-b{ background: rgb(var(--b)); }
-
-    .log{
-      margin-top:12px; border:1px solid rgba(255,255,255,.22);
-      background: rgba(255,255,255,.05); border-radius:12px; padding:10px;
-      max-height: 380px; overflow:auto;
-    }
-    .line{ display:flex; gap:10px; align-items:flex-start; margin:6px 0; }
-    .badge{
-      min-width:2rem; text-align:center; font-weight:800; border-radius:8px; color:#0b0e1a; padding:6px 10px;
-    }
-    .badge.a{ background: rgb(var(--a)); }
-    .badge.b{ background: rgb(var(--b)); }
-    .content{ white-space:pre-wrap; }
-    .hr{ height:1px; background:rgba(255,255,255,.14); margin:8px 0; border:0 }
-  </style>
+  <title>Dialóg predmetov — online</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-
 <main class="wrap">
   <header class="head">
-    <h1>🎭 Dialóg predmetov: Bakalarska praca (Artem  Shestakov)</h1>
-    <p class="sub">Zadaj tému a dve veci. Píšte dialóg po ťahoch — A a B majú rôzne farby. Na konci stiahni .txt.</p>
+    <h1>🎭 Dialóg predmetov — online režim</h1>
+    <p class="sub">Pridávaj ľubovoľný počet účastníkov, píš dialóg po ťahoch a synchronizuj miestnosť cez Firebase.</p>
   </header>
 
   <section class="grid">
-    <!-- Zadanie -->
     <div class="card">
-      <h3>1) Téma a predmety</h3>
+      <h3>1) Online miestnosť</h3>
+      <div class="row wrap-row">
+        <input id="roomId" placeholder="ID miestnosti, napr. bakalarka-1" />
+        <button class="btn solid" id="connectRoom">🌐 Pripojiť</button>
+        <button class="btn ghost" id="offlineMode">Offline</button>
+      </div>
+      <p id="status" class="status">Režim: offline</p>
+      <p class="hint">Pred online použitím vlož svoje Firebase údaje do <code>script.js</code>.</p>
+    </div>
+
+    <div class="card">
+      <h3>2) Téma</h3>
       <div class="row">
-        <input id="tema" placeholder="Téma (napr. Čo znamená byť užitočný?)">
+        <input id="tema" placeholder="Téma (napr. Čo znamená byť užitočný?)" />
         <button class="btn" id="temaRnd">🎲</button>
       </div>
-
-      <div class="row">
-        <input id="objA" placeholder="Predmet A (napr. Stolička)">
-        <button class="btn" id="objARnd">🎲</button>
-      </div>
-      <div class="row">
-        <input id="objB" placeholder="Predmet B (napr. Rúra)">
-        <button class="btn" id="objBRnd">🎲</button>
-      </div>
-
-      <div class="pillboard">
+      <div class="pillboard one">
         <div class="pill"><span class="k">Téma</span><span id="temaOut" class="v">—</span></div>
-        <div class="pill"><span class="k">A</span><span id="objAOut" class="v">—</span></div>
-        <div class="pill"><span class="k">B</span><span id="objBOut" class="v">—</span></div>
       </div>
     </div>
 
-    <!-- Editor -->
     <div class="card">
-      <h3>2) Písanie dialógu</h3>
+      <h3>3) Účastníci</h3>
+      <div id="participants" class="participants"></div>
+      <div class="row wrap-row add-user">
+        <input id="newName" placeholder="Meno/rečník, napr. C" />
+        <input id="newObject" placeholder="Predmet, napr. Lampa" />
+        <button class="btn" id="objectRnd">🎲 predmet</button>
+        <button class="btn solid" id="addParticipant">➕ Pridať účastníka</button>
+      </div>
+    </div>
 
+    <div class="card editor-card">
+      <h3>4) Písanie dialógu</h3>
       <div class="speaker">
-        <button class="chip chip-a" id="speakA">A</button>
-        <button class="chip chip-b" id="speakB">B</button>
-        <span class="muted">Na rade: <b id="whoNow">A</b></span>
+        <span class="muted">Na rade:</span>
+        <select id="whoSelect"></select>
+        <button class="btn" id="nextSpeaker">↪️ Ďalší</button>
       </div>
-
-      <div class="row">
-        <textarea id="line" rows="3" placeholder="Napíš repliku. Enter – pridať, Shift+Enter – nový riadok."></textarea>
-      </div>
-
-      <div class="row" style="gap:.6rem; flex-wrap:wrap">
+      <textarea id="line" rows="3" placeholder="Napíš repliku. Enter – pridať, Shift+Enter – nový riadok."></textarea>
+      <div class="row wrap-row actions">
         <button class="btn" id="addLine">➕ Pridať repliku</button>
-        <button class="btn" id="switch">↔️ Prepnúť A/B</button>
         <button class="btn ghost" id="clearAll">🧹 Vyčistiť</button>
         <button class="btn solid" id="download">⬇️ Stiahnuť .txt</button>
       </div>
-
       <div id="log" class="log" aria-live="polite"></div>
     </div>
   </section>
 </main>
-
-<script>
-  // --- Dáta pre náhodný výber ---
-  const TEMY = [
-    "Čo znamená byť užitočný?","Sloboda alebo bezpečnosť?","Treba vždy poslúchať pravidlá?",
-    "Kedy je ticho výrečnejšie než slová?","Čo robí dom domovom?","Ako meriame šťastie?",
-    "Kedy je riziko opodstatnené?","Ako vzniká dôvera?","Potrebujeme rutinu?","Čo skrýva ticho?",
-    "Čo je dôležitejšie: forma alebo obsah?","Kde končí ja a začína my?","Môžeme byť objektívni?",
-    "Ako sa sny menia v čase?","Prečo potrebujeme pravidlá hry?","Kedy je mlčanie lepšie než slová?",
-    "Čo je ideálny deň?","Kde je hranica zodpovednosti?","Ako chápeme krásu?","Kedy riskovať má zmysel?"
-  ];
-  const OBJEKTY = [
-    "Stolička","Rúra","Dáždnik","Hodiny","Šálka","Kniha","Mobil","Zrkadlo","Kľúč","Lampa",
-    "Bicykel","Vankúš","Ruksak","Ceruzka","Kávovar","Rastlina","Kabát","Fľaša","Vysávač","Toster"
-  ];
-
-  const $ = (id) => document.getElementById(id);
-  const choice = (arr, exclude) => {
-    const pool = exclude ? arr.filter(x => x !== exclude) : arr;
-    return pool[Math.floor(Math.random() * pool.length)];
-  };
-
-  // zadanie
-  const tema = $("tema"), objA = $("objA"), objB = $("objB");
-  const temaOut = $("temaOut"), objAOut = $("objAOut"), objBOut = $("objBOut");
-
-  function syncAssignment() {
-    temaOut.textContent = tema.value || "—";
-    objAOut.textContent = objA.value || "—";
-    objBOut.textContent = objB.value || "—";
-  }
-
-  $("temaRnd").onclick = () => { tema.value = choice(TEMY); syncAssignment(); };
-  $("objARnd").onclick = () => { objA.value = choice(OBJEKTY, objB.value); syncAssignment(); };
-  $("objBRnd").onclick = () => { objB.value = choice(OBJEKTY, objA.value); syncAssignment(); };
-  [tema, objA, objB].forEach(el => el.addEventListener("input", syncAssignment));
-
-  // editor dialógu
-  let who = "A";
-  const whoNow = $("whoNow");
-  const speakA = $("speakA"), speakB = $("speakB");
-  const line = $("line"), addLine = $("addLine"), switchBtn = $("switch");
-  const log = $("log"), clearAll = $("clearAll"), downloadBtn = $("download");
-
-  whoNow.textContent = who;
-
-  function setWho(n) {
-    who = n;
-    whoNow.textContent = who;
-  }
-  speakA.onclick = () => setWho("A");
-  speakB.onclick = () => setWho("B");
-  switchBtn.onclick = () => setWho(who === "A" ? "B" : "A");
-
-  const entries = [];
-
-  function renderLog() {
-    log.innerHTML = "";
-    entries.forEach((e, i) => {
-      const row = document.createElement("div");
-      row.className = "line";
-      const badge = document.createElement("div");
-      badge.className = "badge " + (e.speaker.toLowerCase());
-      badge.textContent = e.speaker;
-      const content = document.createElement("div");
-      content.className = "content";
-      content.textContent = e.text;
-      row.appendChild(badge);
-      row.appendChild(content);
-      log.appendChild(row);
-      if (i < entries.length - 1) {
-        const hr = document.createElement("div");
-        hr.className = "hr";
-        log.appendChild(hr);
-      }
-    });
-    log.scrollTop = log.scrollHeight;
-  }
-
-  function pushLine() {
-    const txt = line.value.trim();
-    if (!txt) return;
-    entries.push({ speaker: who, text: txt });
-    line.value = "";
-    renderLog();
-    setWho(who === "A" ? "B" : "A");
-    line.focus();
-  }
-
-  addLine.onclick = pushLine;
-  line.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault(); pushLine();
-    }
-  });
-  clearAll.onclick = () => {
-    if (confirm("Vyčistiť celý dialóg?")) {
-      entries.length = 0;
-      renderLog();
-    }
-  };
-
-  downloadBtn.onclick = () => {
-    const temaText = tema.value || "bez_temy";
-    const header = `Dialóg predmetov\nTéma: ${tema.value || "—"}\nA: ${objA.value || "—"}\nB: ${objB.value || "—"}\n\n`;
-    const body = entries.map(e => `${e.speaker}: ${e.text}`).join("\n");
-    const blob = new Blob([header + body + "\n"], { type: "text/plain;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    const safe = temaText.toLowerCase().replace(/[^a-z0-9áäčďéíĺľňóôŕšťúýž_-]+/gi, "-");
-    a.download = `dialog-predmetov_${safe || "zaznam"}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(a.href);
-      a.remove();
-    }, 0);
-  };
-
-  function init() {
-    if (!tema.value) tema.value = choice(TEMY);
-    if (!objA.value) objA.value = choice(OBJEKTY);
-    if (!objB.value || objB.value === objA.value) objB.value = choice(OBJEKTY, objA.value);
-    syncAssignment();
-    renderLog();
-    line.focus();
-  }
-  init();
-</script>
-
+<script type="module" src="script.js"></script>
 </body>
 </html>
