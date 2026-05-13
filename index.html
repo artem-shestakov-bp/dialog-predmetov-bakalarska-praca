@@ -1,12 +1,15 @@
 <!doctype html>
 <html lang="sk">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dialóg predmetov: Bakalarska praca</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Dialóg predmetov</title>
 
   <link rel="stylesheet" href="style.css?v=4">
 </head>
+
 <body>
 
 <main class="wrap">
@@ -15,36 +18,37 @@
     <h1>🎭 Dialóg predmetov: Bakalarska praca</h1>
 
     <p class="sub">
-      Zadaj tému a predmety. Píšte dialóg po ťahoch.
-      Účastníkov môže byť viac a dialóg môže bežať online cez Firebase.
+      Online aj offline dialóg predmetov cez Firebase.
     </p>
   </header>
 
   <section class="grid">
 
-    <!-- ONLINE -->
     <div class="card">
+
       <h3>🌐 Online miestnosť</h3>
 
       <div class="row">
+
         <input
           id="roomId"
-          placeholder="Room ID napr. skupina-1"
+          placeholder="Room ID"
         >
 
         <button
-          class="btn solid"
           id="connectRoom"
+          class="btn solid"
         >
           Pripojiť
         </button>
 
         <button
-          class="btn ghost"
           id="offlineMode"
+          class="btn ghost"
         >
-          Offline režim
+          Offline
         </button>
+
       </div>
 
       <p
@@ -53,46 +57,50 @@
       >
         Offline režim
       </p>
+
     </div>
 
-    <!-- TEMA -->
     <div class="card">
 
       <h3>1) Téma a predmety</h3>
 
       <div class="row">
+
         <input
           id="tema"
           placeholder="Téma"
         >
 
         <button
-          class="btn"
           id="temaRnd"
+          class="btn"
         >
           🎲
         </button>
+
       </div>
 
       <div class="row">
+
         <input
           id="objInput"
           placeholder="Nový predmet / účastník"
         >
 
         <button
-          class="btn"
           id="participantRnd"
+          class="btn"
         >
           🎲
         </button>
 
         <button
-          class="btn"
           id="addParticipant"
+          class="btn"
         >
-          ➕ Pridať účastníka
+          ➕ Pridať
         </button>
+
       </div>
 
       <div
@@ -125,55 +133,61 @@
         </div>
 
       </div>
+
     </div>
 
-    <!-- EDITOR -->
     <div class="card editor-card">
 
-      <h3>2) Písanie dialógu</h3>
+      <h3>2) Dialóg</h3>
 
       <div class="speaker">
-        <span class="muted">Na rade:</span>
+
+        <span class="muted">
+          Na rade:
+        </span>
 
         <b id="whoNow">—</b>
+
       </div>
 
       <div class="row">
+
         <textarea
           id="line"
           rows="3"
-          placeholder="Napíš repliku. Enter – pridať, Shift+Enter – nový riadok."
+          placeholder="Napíš repliku..."
         ></textarea>
+
       </div>
 
       <div class="row controls">
 
         <button
-          class="btn"
           id="addLine"
+          class="btn"
         >
           ➕ Pridať repliku
         </button>
 
         <button
-          class="btn"
           id="switch"
+          class="btn"
         >
-          ↔️ Ďalší účastník
+          ↔️ Ďalší
         </button>
 
         <button
-          class="btn ghost"
           id="clearAll"
+          class="btn ghost"
         >
           🧹 Vyčistiť
         </button>
 
         <button
-          class="btn solid"
           id="download"
+          class="btn solid"
         >
-          ⬇️ Stiahnuť .txt
+          ⬇️ TXT
         </button>
 
       </div>
@@ -181,7 +195,6 @@
       <div
         id="log"
         class="log"
-        aria-live="polite"
       ></div>
 
     </div>
